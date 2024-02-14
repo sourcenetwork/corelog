@@ -91,8 +91,11 @@ func NewLoggerWithConfig(name string, config Config) *Logger {
 		handler = slog.NewJSONHandler(output, opts)
 	}
 
+	// add logger name to all logs
+	handler = handler.WithAttrs([]slog.Attr{slog.Any("logger", name)})
+
 	return &Logger{
-		handler:          handler.WithGroup(name),
+		handler:          handler,
 		enableStackTrace: config.EnableStackTrace,
 		enableSource:     config.EnableSource,
 	}
