@@ -103,32 +103,38 @@ func NewLoggerWithConfig(name string, config Config) *Logger {
 
 // Debug logs a message at debug log level.
 func (l *Logger) Debug(msg string, args ...any) {
-	l.DebugContext(context.Background(), msg, args...)
+	l.log(context.Background(), levelDebug, nil, msg, args)
 }
 
 // Info logs a message at info log level.
 func (l *Logger) Info(msg string, args ...any) {
-	l.InfoContext(context.Background(), msg, args...)
+	l.log(context.Background(), levelInfo, nil, msg, args)
 }
 
 // Error logs a message at error log level.
 func (l *Logger) Error(msg string, args ...any) {
-	l.ErrorContext(context.Background(), msg, args...)
+	l.log(context.Background(), levelError, nil, msg, args)
 }
 
 // ErrorE logs a message at error log level with an error stacktrace.
 func (l *Logger) ErrorE(msg string, err error, args ...any) {
-	l.ErrorContextE(context.Background(), msg, err, args...)
+	l.log(context.Background(), levelError, err, msg, args)
 }
 
 // Fatal logs a message at fatal log level.
 func (l *Logger) Fatal(msg string, args ...any) {
-	l.FatalContext(context.Background(), msg, args...)
+	l.log(context.Background(), levelFatal, nil, msg, args)
+	if !l.skipExit {
+		os.Exit(1)
+	}
 }
 
 // FatalE logs a message at fatal log level with an error stacktrace.
 func (l *Logger) FatalE(msg string, err error, args ...any) {
-	l.FatalContextE(context.Background(), msg, err, args...)
+	l.log(context.Background(), levelFatal, err, msg, args)
+	if !l.skipExit {
+		os.Exit(1)
+	}
 }
 
 // DebugContext logs a message at debug log level.

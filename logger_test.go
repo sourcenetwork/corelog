@@ -145,6 +145,90 @@ func TestLoggerFatalE(t *testing.T) {
 	assertRecordAttrs(t, handler.records[0], slog.Any("arg1", "val1"), slog.Any("stacktrace", fmt.Sprintf("%+v", err)))
 }
 
+func TestLoggerInfoContext(t *testing.T) {
+	handler := &TestHandler{}
+	logger := &Logger{handler: handler}
+
+	logger.InfoContext(context.Background(), "test", "arg1", "val1")
+	require.Len(t, handler.records, 1)
+
+	assert.Equal(t, levelInfo, handler.records[0].Level)
+	assert.Equal(t, "test", handler.records[0].Message)
+	assertRecordAttrs(t, handler.records[0], slog.Any("arg1", "val1"))
+}
+
+func TestLoggerDebugContext(t *testing.T) {
+	handler := &TestHandler{}
+	logger := &Logger{handler: handler}
+
+	logger.DebugContext(context.Background(), "test", "arg1", "val1")
+	require.Len(t, handler.records, 1)
+
+	assert.Equal(t, levelDebug, handler.records[0].Level)
+	assert.Equal(t, "test", handler.records[0].Message)
+	assertRecordAttrs(t, handler.records[0], slog.Any("arg1", "val1"))
+}
+
+func TestLoggerErrorContext(t *testing.T) {
+	handler := &TestHandler{}
+	logger := &Logger{handler: handler}
+
+	logger.ErrorContext(context.Background(), "test", "arg1", "val1")
+	require.Len(t, handler.records, 1)
+
+	assert.Equal(t, levelError, handler.records[0].Level)
+	assert.Equal(t, "test", handler.records[0].Message)
+	assertRecordAttrs(t, handler.records[0], slog.Any("arg1", "val1"))
+}
+
+func TestLoggerErrorContextE(t *testing.T) {
+	handler := &TestHandler{}
+	logger := &Logger{
+		handler:          handler,
+		enableStackTrace: true,
+	}
+
+	err := fmt.Errorf("this is a test error")
+	logger.ErrorContextE(context.Background(), "test", err, "arg1", "val1")
+	require.Len(t, handler.records, 1)
+
+	assert.Equal(t, levelError, handler.records[0].Level)
+	assert.Equal(t, "test", handler.records[0].Message)
+	assertRecordAttrs(t, handler.records[0], slog.Any("arg1", "val1"), slog.Any("stacktrace", fmt.Sprintf("%+v", err)))
+}
+
+func TestLoggerFatalContext(t *testing.T) {
+	handler := &TestHandler{}
+	logger := &Logger{
+		handler:  handler,
+		skipExit: true,
+	}
+
+	logger.FatalContext(context.Background(), "test", "arg1", "val1")
+	require.Len(t, handler.records, 1)
+
+	assert.Equal(t, levelFatal, handler.records[0].Level)
+	assert.Equal(t, "test", handler.records[0].Message)
+	assertRecordAttrs(t, handler.records[0], slog.Any("arg1", "val1"))
+}
+
+func TestLoggerFatalContextE(t *testing.T) {
+	handler := &TestHandler{}
+	logger := &Logger{
+		handler:          handler,
+		enableStackTrace: true,
+		skipExit:         true,
+	}
+
+	err := fmt.Errorf("this is a test error")
+	logger.FatalContextE(context.Background(), "test", err, "arg1", "val1")
+	require.Len(t, handler.records, 1)
+
+	assert.Equal(t, levelFatal, handler.records[0].Level)
+	assert.Equal(t, "test", handler.records[0].Message)
+	assertRecordAttrs(t, handler.records[0], slog.Any("arg1", "val1"), slog.Any("stacktrace", fmt.Sprintf("%+v", err)))
+}
+
 func TestLoggerInfoWithEnableSource(t *testing.T) {
 	handler := &TestHandler{}
 	logger := &Logger{
