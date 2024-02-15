@@ -4,17 +4,13 @@ Logging library used across Source Network projects.
 
 ## Configuration
 
-Loggers are configured via a common set of environment variables:
+Loggers are configured via environment variables and/or command line flags.
 
-- `CLOG_LEVEL` sets logging level for all loggers
-    -  Can be one of `info` `debug` `error` `fatal`
-- `CLOG_FORMAT` sets logging format for all loggers
-    - Can be one of `json` `text`
-- `CLOG_STACKTRACE` enables stacktraces for all loggers
-    - Can be one of `true` `false`
-- `CLOG_SOURCE` enables source location for all loggers
-    - Can be one of `true` `false`
-- `CLOG_OUTPUT` sets the output path for all loggers
-    - Can be one of `stderr` `stdout`
-- `CLOG_OVERRIDES` sets logger specific overrides
-    - Format `net,level=info;core,output=stdout`
+| Env              | Flag             | Description               | Values                              |
+| ---------------- | ---------------- | ------------------------- | ----------------------------------- |
+| `LOG_LEVEL`      | `log-level`      | sets logging level        | `info` `debug` `error` `fatal`      |
+| `LOG_FORMAT`     | `log-format`     | sets logging format       | `json` `text`                       |
+| `LOG_STACKTRACE` | `log-stacktrace` | enables stacktraces       | `true` `false`                      |
+| `LOG_SOURCE`     | `log-source`     | enables source location   | `true` `false`                      |
+| `LOG_OUTPUT`     | `log-output`     | sets the output path      | `stderr` `stdout`                   |
+| `LOG_OVERRIDES`  | `log-overrides`  | logger specific overrides | `net,level=info;core,output=stdout` |

@@ -1,6 +1,7 @@
 package corelog
 
 import (
+	"flag"
 	"os"
 	"strconv"
 	"strings"
@@ -53,29 +54,62 @@ type Config struct {
 	Overrides map[string]Config
 }
 
-// defaultConfig is the package level config that all loggers use by default.
-var defaultConfig = Config{
-	Level:            LevelInfo,
-	Output:           OutputStdErr,
-	Format:           FormatJSON,
-	EnableStackTrace: false,
-	EnableSource:     false,
-	Overrides:        make(map[string]Config),
-}
+var (
+	// LevelFlag is a flag that sets default `Level` value.
+	LevelFlag = flag.String("log-level", "", "Specifies the logging level.")
+	// FormatFlag is a flag that sets the default `Format` value.
+	FormatFlag = flag.String("log-format", "", "Specifies the output format of the logger")
+	// EnableStackTraceFlag is a flag sets the default `EnableStackTrace` value.
+	EnableStackTraceFlag = flag.Bool("log-stacktrace", false, "Enables logging error stacktraces.")
+	// EnableSourceFlag is a flag that sets the default `EnableSource` value.
+	EnableSourceFlag = flag.Bool("log-source", false, "Enables logging the source location.")
+	// OutputFlag is a flag that sets the default `Output` value.
+	OutputFlag = flag.String("log-output", "", "Specifies the output path for the logger.")
+	// OverridesFlag is a flag that sets the default `Overrides` value.
+	OverridesFlag = flag.String("log-overrides", "", "Specifies logger specific overrides.")
+)
 
-// load the configuration from env before
-// any loggers are created
-func init() {
+// LoadConfig returns a config with values set from environment variables and cli flags.
+func LoadConfig() Config {
+	// first load the environment variables
+	level := os.Getenv("LOG_LEVEL")
+	output := os.Getenv("LOG_OUTPUT")
+	format := os.Getenv("LOG_FORMAT")
+	enableStackTrace := os.Getenv("LOG_STACKTRACE")
+	enableSource := os.Getenv("LOG_SOURCE")
+	overrides := os.Getenv("LOG_OVERRIDES")
+
+	// override environment variables with cli flags
+	flag.Parse()
+	flag.Visit(func(f *flag.Flag) {
+		switch f.Name {
+		case "log-level":
+			level = *LevelFlag
+		case "log-format":
+			format = *FormatFlag
+		case "log-stacktrace":
+			enableStackTrace = strconv.FormatBool(*EnableStackTraceFlag)
+		case "log-source":
+			enableSource = strconv.FormatBool(*EnableSourceFlag)
+		case "log-output":
+			output = *OutputFlag
+		case "log-overrides":
+			overrides = *OverridesFlag
+		}
+	})
+
 	values := make(map[string]string)
-	values["level"] = os.Getenv("CLOG_LEVEL")
-	values["output"] = os.Getenv("CLOG_OUTPUT")
-	values["format"] = os.Getenv("CLOG_FORMAT")
-	values["stacktrace"] = os.Getenv("CLOG_STACKTRACE")
-	values["source"] = os.Getenv("CLOG_SOURCE")
+	values["level"] = level
+	values["output"] = output
+	values["format"] = format
+	values["stacktrace"] = enableStackTrace
+	values["source"] = enableSource
+	values["overrides"] = overrides
 
-	// parse and set default config
-	defaultConfig = parseConfigMap(values)
-	defaultConfig.Overrides = parseConfigOverrides(os.Getenv("CLOG_OVERRIDES"))
+	// parse config values
+	config := parseConfigMap(values)
+	config.Overrides = parseConfigOverrides(values["overrides"])
+	return config
 }
 
 // parseConfigMap parses a map of strings into a config.
@@ -115,6 +149,9 @@ func parseConfigOverrides(text string) map[string]Config {
 		}
 		// first value is the override name
 		overrideName := values[0]
+		if overrideName == "" {
+			continue // empty logger name
+		}
 		overrides[overrideName] = parseConfigMap(configMap)
 	}
 	return overrides

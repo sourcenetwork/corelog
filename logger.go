@@ -36,15 +36,16 @@ type Logger struct {
 
 // NewLogger returns a new logger configured with the default config.
 func NewLogger(name string) *Logger {
-	// use overrides if specified
-	if val, ok := defaultConfig.Overrides[name]; ok {
-		return NewLoggerWithConfig(name, val)
-	}
-	return NewLoggerWithConfig(name, defaultConfig)
+	return NewLoggerWithConfig(name, LoadConfig())
 }
 
 // NewLoggerWithConfig returns a new logger configured with the given config.
 func NewLoggerWithConfig(name string, config Config) *Logger {
+	// use overrides if specified
+	if val, ok := config.Overrides[name]; ok {
+		return NewLoggerWithConfig(name, val)
+	}
+
 	var level slog.Leveler
 	switch config.Level {
 	case LevelDebug:
@@ -56,7 +57,7 @@ func NewLoggerWithConfig(name string, config Config) *Logger {
 	case LevelFatal:
 		level = levelFatal
 	default:
-		level = levelDebug
+		level = levelInfo
 	}
 
 	var output io.Writer
@@ -88,7 +89,7 @@ func NewLoggerWithConfig(name string, config Config) *Logger {
 	case FormatJSON:
 		handler = slog.NewJSONHandler(output, opts)
 	default:
-		handler = slog.NewJSONHandler(output, opts)
+		handler = slog.NewTextHandler(output, opts)
 	}
 
 	// add logger name to all logs

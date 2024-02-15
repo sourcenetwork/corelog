@@ -38,21 +38,27 @@ func (h *TestHandler) WithGroup(name string) slog.Handler {
 func TestNewLogger(t *testing.T) {
 	logger := NewLogger("test")
 
-	_, ok := logger.handler.(*slog.JSONHandler)
+	_, ok := logger.handler.(*slog.TextHandler)
 	assert.True(t, ok)
 
 	assert.False(t, logger.enableSource)
 	assert.False(t, logger.enableStackTrace)
 }
 
-func TestNewLoggerWithOverride(t *testing.T) {
-	defaultConfig.Overrides["test"] = Config{
+func TestNewLoggerWithConfigOverrides(t *testing.T) {
+	config := Config{
+		EnableStackTrace: false,
+		EnableSource:     false,
+		Format:           FormatJSON,
+		Overrides:        make(map[string]Config),
+	}
+	config.Overrides["test"] = Config{
 		EnableStackTrace: true,
 		EnableSource:     true,
 		Format:           FormatText,
 	}
 
-	logger := NewLogger("test")
+	logger := NewLoggerWithConfig("test", config)
 
 	_, ok := logger.handler.(*slog.TextHandler)
 	assert.True(t, ok)
