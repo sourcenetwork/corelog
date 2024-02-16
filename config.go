@@ -1,10 +1,11 @@
 package corelog
 
 import (
-	"flag"
 	"os"
 	"strconv"
 	"strings"
+
+	flag "github.com/spf13/pflag"
 )
 
 const (
@@ -64,26 +65,23 @@ func LoadConfig() Config {
 	enableSource := os.Getenv("LOG_SOURCE")
 	overrides := os.Getenv("LOG_OVERRIDES")
 
-	if !FlagSet.Parsed() {
-		FlagSet.Parse(os.Args[1:])
-	}
-
-	// override environment variables with cli flags
-	FlagSet.Visit(func(f *flag.Flag) {
-		switch f.Name {
+	// override environment variables with command line flags
+	FlagSet.ParseAll(os.Args[1:], func(flag *flag.Flag, value string) error {
+		switch flag.Name {
 		case "log-level":
-			level = f.Value.String()
+			level = value
 		case "log-format":
-			format = f.Value.String()
+			format = value
 		case "log-stacktrace":
-			enableStackTrace = f.Value.String()
+			enableStackTrace = value
 		case "log-source":
-			enableSource = f.Value.String()
+			enableSource = value
 		case "log-output":
-			output = f.Value.String()
+			output = value
 		case "log-overrides":
-			overrides = f.Value.String()
+			overrides = value
 		}
+		return nil
 	})
 
 	values := make(map[string]string)

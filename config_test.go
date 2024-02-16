@@ -54,43 +54,17 @@ func TestLoadConfigFromEnv(t *testing.T) {
 }
 
 func TestSetConfigFromFlags(t *testing.T) {
-	err := FlagSet.Set("log-level", "info")
-	require.NoError(t, err)
-
-	err = FlagSet.Set("log-format", "json")
-	require.NoError(t, err)
-
-	err = FlagSet.Set("log-stacktrace", "true")
-	require.NoError(t, err)
-
-	err = FlagSet.Set("log-source", "false")
-	require.NoError(t, err)
-
-	err = FlagSet.Set("log-output", "stdout")
-	require.NoError(t, err)
-
-	err = FlagSet.Set("log-overrides", "net,source=true,level=error")
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		err := FlagSet.Set("log-level", "")
-		require.NoError(t, err)
-
-		err = FlagSet.Set("log-format", "")
-		require.NoError(t, err)
-
-		err = FlagSet.Set("log-stacktrace", "false")
-		require.NoError(t, err)
-
-		err = FlagSet.Set("log-source", "false")
-		require.NoError(t, err)
-
-		err = FlagSet.Set("log-output", "")
-		require.NoError(t, err)
-
-		err = FlagSet.Set("log-overrides", "")
-		require.NoError(t, err)
-	})
+	args := os.Args
+	os.Args = []string{
+		"test",
+		"--log-level=info",
+		"--log-format=json",
+		"--log-stacktrace=true",
+		"--log-source=false",
+		"--log-output=stdout",
+		"--log-overrides=net,source=true,level=error",
+	}
+	t.Cleanup(func() { os.Args = args })
 
 	config := LoadConfig()
 	assert.Equal(t, "info", config.Level)
