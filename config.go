@@ -5,7 +5,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 const (
@@ -43,23 +42,17 @@ type Config struct {
 	Overrides map[string]Config
 }
 
-var (
-	// LevelFlag is a flag that sets default `Level` value.
-	LevelFlag = flag.String("log-level", "", "Specifies the logging level.")
-	// FormatFlag is a flag that sets the default `Format` value.
-	FormatFlag = flag.String("log-format", "", "Specifies the output format of the logger")
-	// EnableStackTraceFlag is a flag sets the default `EnableStackTrace` value.
-	EnableStackTraceFlag = flag.Bool("log-stacktrace", false, "Enables logging error stacktraces.")
-	// EnableSourceFlag is a flag that sets the default `EnableSource` value.
-	EnableSourceFlag = flag.Bool("log-source", false, "Enables logging the source location.")
-	// OutputFlag is a flag that sets the default `Output` value.
-	OutputFlag = flag.String("log-output", "", "Specifies the output path for the logger.")
-	// OverridesFlag is a flag that sets the default `Overrides` value.
-	OverridesFlag = flag.String("log-overrides", "", "Specifies logger specific overrides.")
-)
+// FlagSet is the set of flags used to configure the logging package.
+var FlagSet = flag.NewFlagSet("corelog", flag.ContinueOnError)
 
-// parseFlagsOnce ensures that `flag.Parse` is only called once.
-var parseFlagsOnce sync.Once
+func init() {
+	FlagSet.String("log-level", "", "Specifies the logging level.")
+	FlagSet.String("log-format", "", "Specifies the output format of the logger")
+	FlagSet.Bool("log-stacktrace", false, "Enables logging error stacktraces.")
+	FlagSet.Bool("log-source", false, "Enables logging the source location.")
+	FlagSet.String("log-output", "", "Specifies the output path for the logger.")
+	FlagSet.String("log-overrides", "", "Specifies logger specific overrides.")
+}
 
 // LoadConfig returns a config with values set from environment variables and cli flags.
 func LoadConfig() Config {
@@ -71,25 +64,25 @@ func LoadConfig() Config {
 	enableSource := os.Getenv("LOG_SOURCE")
 	overrides := os.Getenv("LOG_OVERRIDES")
 
-	if !flag.Parsed() {
-		parseFlagsOnce.Do(flag.Parse)
+	if !FlagSet.Parsed() {
+		FlagSet.Parse(os.Args[1:])
 	}
 
 	// override environment variables with cli flags
-	flag.Visit(func(f *flag.Flag) {
+	FlagSet.Visit(func(f *flag.Flag) {
 		switch f.Name {
 		case "log-level":
-			level = *LevelFlag
+			level = f.Value.String()
 		case "log-format":
-			format = *FormatFlag
+			format = f.Value.String()
 		case "log-stacktrace":
-			enableStackTrace = strconv.FormatBool(*EnableStackTraceFlag)
+			enableStackTrace = f.Value.String()
 		case "log-source":
-			enableSource = strconv.FormatBool(*EnableSourceFlag)
+			enableSource = f.Value.String()
 		case "log-output":
-			output = *OutputFlag
+			output = f.Value.String()
 		case "log-overrides":
-			overrides = *OverridesFlag
+			overrides = f.Value.String()
 		}
 	})
 

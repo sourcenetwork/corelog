@@ -1,7 +1,6 @@
 package corelog
 
 import (
-	"flag"
 	"os"
 	"testing"
 
@@ -55,41 +54,41 @@ func TestLoadConfigFromEnv(t *testing.T) {
 }
 
 func TestSetConfigFromFlags(t *testing.T) {
-	err := flag.Set("log-level", "info")
+	err := FlagSet.Set("log-level", "info")
 	require.NoError(t, err)
 
-	err = flag.Set("log-format", "json")
+	err = FlagSet.Set("log-format", "json")
 	require.NoError(t, err)
 
-	err = flag.Set("log-stacktrace", "true")
+	err = FlagSet.Set("log-stacktrace", "true")
 	require.NoError(t, err)
 
-	err = flag.Set("log-source", "false")
+	err = FlagSet.Set("log-source", "false")
 	require.NoError(t, err)
 
-	err = flag.Set("log-output", "stdout")
+	err = FlagSet.Set("log-output", "stdout")
 	require.NoError(t, err)
 
-	err = flag.Set("log-overrides", "net,source=true,level=error")
+	err = FlagSet.Set("log-overrides", "net,source=true,level=error")
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err := flag.Set("log-level", "")
+		err := FlagSet.Set("log-level", "")
 		require.NoError(t, err)
 
-		err = flag.Set("log-format", "")
+		err = FlagSet.Set("log-format", "")
 		require.NoError(t, err)
 
-		err = flag.Set("log-stacktrace", "false")
+		err = FlagSet.Set("log-stacktrace", "false")
 		require.NoError(t, err)
 
-		err = flag.Set("log-source", "false")
+		err = FlagSet.Set("log-source", "false")
 		require.NoError(t, err)
 
-		err = flag.Set("log-output", "")
+		err = FlagSet.Set("log-output", "")
 		require.NoError(t, err)
 
-		err = flag.Set("log-overrides", "")
+		err = FlagSet.Set("log-overrides", "")
 		require.NoError(t, err)
 	})
 
