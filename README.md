@@ -2,6 +2,46 @@
 
 Logging library used across Source Network projects.
 
+## Usage
+
+```go
+package main
+
+import (
+    "github.com/sourcenetwork/corelog"
+)
+
+var log = corelog.NewLogger("main")
+
+func main() {
+    log.Debug("doing stuff", "key", "val", ...)
+
+    child = log.WithAttrs(slog.Any("key", "val"), ...)
+    child.Info("doing stuff with attrs", ...)
+
+    group = log.WithGroup("group")
+    group.Info("doing stuff with group", "key", "val", ...)
+}
+```
+
+### Usage with Cobra
+
+Add config flags to Cobra.
+
+```go
+package main
+
+import (
+    "github.com/sourcenetwork/corelog"
+    "github.com/spf13/cobra"
+)
+
+func main() {
+    cmd := &cobra.Command{...}
+    cmd.PersistentFlags().AddGoFlagSet(corelog.FlagSet)
+}
+```
+
 ## Configuration
 
 Loggers are configured via environment variables and/or command line flags.
