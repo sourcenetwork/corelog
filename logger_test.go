@@ -45,6 +45,78 @@ func TestNewLogger(t *testing.T) {
 	assert.False(t, logger.enableStackTrace)
 }
 
+func TestNewLoggerWithFormatText(t *testing.T) {
+	config := Config{
+		Format: FormatText,
+	}
+
+	logger := NewLoggerWithConfig("test", config)
+	_, ok := logger.handler.(*slog.TextHandler)
+	assert.True(t, ok)
+}
+
+func TestNewLoggerWithFormatJSON(t *testing.T) {
+	config := Config{
+		Format: FormatJSON,
+	}
+
+	logger := NewLoggerWithConfig("test", config)
+	_, ok := logger.handler.(*slog.JSONHandler)
+	assert.True(t, ok)
+}
+
+func TestNewLoggerWithConfigLevelDebug(t *testing.T) {
+	config := Config{
+		Level: LevelDebug,
+	}
+
+	logger := NewLoggerWithConfig("test", config)
+	ctx := context.Background()
+	assert.True(t, logger.handler.Enabled(ctx, levelDebug))
+	assert.True(t, logger.handler.Enabled(ctx, levelInfo))
+	assert.True(t, logger.handler.Enabled(ctx, levelError))
+	assert.True(t, logger.handler.Enabled(ctx, levelFatal))
+}
+
+func TestNewLoggerWithConfigLevelInfo(t *testing.T) {
+	config := Config{
+		Level: LevelInfo,
+	}
+
+	logger := NewLoggerWithConfig("test", config)
+	ctx := context.Background()
+	assert.False(t, logger.handler.Enabled(ctx, levelDebug))
+	assert.True(t, logger.handler.Enabled(ctx, levelInfo))
+	assert.True(t, logger.handler.Enabled(ctx, levelError))
+	assert.True(t, logger.handler.Enabled(ctx, levelFatal))
+}
+
+func TestNewLoggerWithConfigLevelError(t *testing.T) {
+	config := Config{
+		Level: LevelError,
+	}
+
+	logger := NewLoggerWithConfig("test", config)
+	ctx := context.Background()
+	assert.False(t, logger.handler.Enabled(ctx, levelDebug))
+	assert.False(t, logger.handler.Enabled(ctx, levelInfo))
+	assert.True(t, logger.handler.Enabled(ctx, levelError))
+	assert.True(t, logger.handler.Enabled(ctx, levelFatal))
+}
+
+func TestNewLoggerWithConfigLevelFatal(t *testing.T) {
+	config := Config{
+		Level: LevelFatal,
+	}
+
+	logger := NewLoggerWithConfig("test", config)
+	ctx := context.Background()
+	assert.False(t, logger.handler.Enabled(ctx, levelDebug))
+	assert.False(t, logger.handler.Enabled(ctx, levelInfo))
+	assert.False(t, logger.handler.Enabled(ctx, levelError))
+	assert.True(t, logger.handler.Enabled(ctx, levelFatal))
+}
+
 func TestNewLoggerWithConfigOverrides(t *testing.T) {
 	config := Config{
 		EnableStackTrace: false,
@@ -59,7 +131,6 @@ func TestNewLoggerWithConfigOverrides(t *testing.T) {
 	}
 
 	logger := NewLoggerWithConfig("test", config)
-
 	_, ok := logger.handler.(*slog.TextHandler)
 	assert.True(t, ok)
 
@@ -249,6 +320,27 @@ func TestLoggerInfoWithEnableSource(t *testing.T) {
 	assert.Equal(t, "test", handler.records[0].Message)
 	assert.NotEqual(t, uintptr(0x00), handler.records[0].PC)
 	assertRecordAttrs(t, handler.records[0], slog.Any("arg1", "val1"))
+}
+
+func TestLoggerWithAttrs(t *testing.T) {
+	handler := &TestHandler{}
+	logger := &Logger{handler: handler}
+
+	attrs := []slog.Attr{slog.Any("extra", "value")}
+	other := logger.WithAttrs(attrs...)
+	otherHandler, ok := other.handler.(*TestHandler)
+	require.True(t, ok)
+	assert.Equal(t, attrs, otherHandler.attrs)
+}
+
+func TestLoggerWithGroup(t *testing.T) {
+	handler := &TestHandler{}
+	logger := &Logger{handler: handler}
+
+	other := logger.WithGroup("group")
+	otherHandler, ok := other.handler.(*TestHandler)
+	require.True(t, ok)
+	assert.Equal(t, "group", otherHandler.group)
 }
 
 // assertRecordAttrs asserts that the record has matching attributes.

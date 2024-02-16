@@ -10,21 +10,6 @@ import (
 	"time"
 )
 
-const (
-	levelDebug = slog.LevelDebug
-	levelInfo  = slog.LevelInfo
-	levelError = slog.LevelError
-	levelFatal = slog.Level(12)
-)
-
-// levelLabels is a mapping of log levels to custom labels.
-var levelLabels = map[slog.Level]string{
-	levelDebug: "DEBUG",
-	levelInfo:  "INFO",
-	levelError: "ERROR",
-	levelFatal: "FATAL",
-}
-
 // Logger is a logger that wraps the slog package.
 type Logger struct {
 	handler          slog.Handler
@@ -41,6 +26,9 @@ func NewLogger(name string) *Logger {
 
 // NewLoggerWithConfig returns a new logger configured with the given config.
 func NewLoggerWithConfig(name string, config Config) *Logger {
+	if config.Overrides == nil {
+		config.Overrides = make(map[string]Config)
+	}
 	// use overrides if specified
 	if val, ok := config.Overrides[name]; ok {
 		return NewLoggerWithConfig(name, val)
@@ -71,15 +59,9 @@ func NewLoggerWithConfig(name string, config Config) *Logger {
 	}
 
 	opts := &slog.HandlerOptions{
-		AddSource: config.EnableSource,
-		Level:     level,
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			// replace level labels with custom labels
-			if a.Key == slog.LevelKey {
-				a.Value = slog.StringValue(levelLabels[level.Level()])
-			}
-			return a
-		},
+		AddSource:   config.EnableSource,
+		Level:       level,
+		ReplaceAttr: replaceLoggerLevel(level.Level()),
 	}
 
 	var handler slog.Handler
@@ -99,6 +81,28 @@ func NewLoggerWithConfig(name string, config Config) *Logger {
 		handler:          handler,
 		enableStackTrace: config.EnableStackTrace,
 		enableSource:     config.EnableSource,
+	}
+}
+
+// WithAttrs returns a new Logger whose attributes consist of
+// both the receiver's attributes and the arguments.
+func (l *Logger) WithAttrs(attrs ...slog.Attr) *Logger {
+	return &Logger{
+		handler:          l.handler.WithAttrs(attrs),
+		enableStackTrace: l.enableStackTrace,
+		enableSource:     l.enableSource,
+		skipExit:         l.skipExit,
+	}
+}
+
+// WithGroup returns a new Logger with the given group appended to
+// the receiver's existing groups.
+func (l *Logger) WithGroup(name string) *Logger {
+	return &Logger{
+		handler:          l.handler.WithGroup(name),
+		enableStackTrace: l.enableStackTrace,
+		enableSource:     l.enableSource,
+		skipExit:         l.skipExit,
 	}
 }
 

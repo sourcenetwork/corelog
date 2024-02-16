@@ -29,28 +29,16 @@ const (
 // Config contains general settings for a logger.
 type Config struct {
 	// Level specifies the logging level.
-	//
-	// This value is set by the "CLOG_LEVEL" environment variable.
 	Level string
 	// Format specifies the output format of the logger.
-	//
-	// This value is set by the "CLOG_FORMAT" environment variable.
 	Format string
 	// EnableStackTrace enables logging error stack traces.
-	//
-	// This value is set by the "CLOG_STACKTRACE" environment variable.
 	EnableStackTrace bool
 	// EnableSource enables logging the source location.
-	//
-	// This value is set by the "CLOG_SOURCE" environment variable.
 	EnableSource bool
 	// Output specifies the output path for the logger.
-	//
-	// This value is set by the "CLOG_OUTPUT" environment variable.
 	Output string
 	// Overrides is a mapping of logger names to override configs.
-	//
-	// This value is set by the "CLOG_OVERRIDES" environment variable.
 	Overrides map[string]Config
 }
 
@@ -104,11 +92,10 @@ func LoadConfig() Config {
 	values["format"] = format
 	values["stacktrace"] = enableStackTrace
 	values["source"] = enableSource
-	values["overrides"] = overrides
 
 	// parse config values
 	config := parseConfigMap(values)
-	config.Overrides = parseConfigOverrides(values["overrides"])
+	config.Overrides = parseConfigOverrides(overrides)
 	return config
 }
 
