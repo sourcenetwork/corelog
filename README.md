@@ -8,19 +8,21 @@ Logging library used across Source Network projects.
 package main
 
 import (
+    "log/slog"
+
     "github.com/sourcenetwork/corelog"
 )
 
 var log = corelog.NewLogger("main")
 
 func main() {
-    log.Debug("doing stuff", "key", "val", ...)
+    log.Debug("doing stuff", "key", "val")
 
-    child = log.WithAttrs(slog.Any("key", "val"), ...)
-    child.Info("doing stuff with attrs", ...)
+    attrs := log.WithAttrs(slog.Any("key", "val"))
+    attrs.Info("doing stuff with attrs")
 
-    group = log.WithGroup("group")
-    group.Info("doing stuff with group", "key", "val", ...)
+    group := log.WithGroup("group")
+    group.Info("doing stuff with group", "key", "val")
 }
 ```
 
