@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 const (
@@ -57,6 +58,9 @@ var (
 	OverridesFlag = flag.String("log-overrides", "", "Specifies logger specific overrides.")
 )
 
+// parseFlagsOnce ensures that `flag.Parse` is only called once.
+var parseFlagsOnce sync.Once
+
 // LoadConfig returns a config with values set from environment variables and cli flags.
 func LoadConfig() Config {
 	// first load the environment variables
@@ -67,8 +71,11 @@ func LoadConfig() Config {
 	enableSource := os.Getenv("LOG_SOURCE")
 	overrides := os.Getenv("LOG_OVERRIDES")
 
+	if !flag.Parsed() {
+		parseFlagsOnce.Do(flag.Parse)
+	}
+
 	// override environment variables with cli flags
-	flag.Parse()
 	flag.Visit(func(f *flag.Flag) {
 		switch f.Name {
 		case "log-level":
