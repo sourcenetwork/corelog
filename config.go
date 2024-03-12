@@ -4,8 +4,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
-
-	flag "github.com/spf13/pflag"
+	"sync"
 )
 
 const (
@@ -19,13 +18,24 @@ const (
 	LevelFatal = "fatal"
 	// FormatText specifies text output for a logger.
 	FormatText = "text"
-	// FormatText specifies json output for a logger.
+	// FormatJSON specifies json output for a logger.
 	FormatJSON = "json"
-	// OutputStdOut specifies stdout output for a logger.
-	OutputStdOut = "stdout"
-	// OutputStdErr specifies stderr output for a logger.
-	OutputStdErr = "stderr"
+	// OutputStdout specifies stdout output for a logger.
+	OutputStdout = "stdout"
+	// OutputStderr specifies stderr output for a logger.
+	OutputStderr = "stderr"
 )
+
+var (
+	configMutex     sync.RWMutex
+	configValue     Config
+	configOverrides = make(map[string]Config)
+)
+
+func init() {
+	SetConfig(DefaultConfig())
+	SetConfigOverrides(os.Getenv("LOG_OVERRIDES"))
+}
 
 // Config contains general settings for a logger.
 type Config struct {
@@ -39,105 +49,87 @@ type Config struct {
 	EnableSource bool
 	// Output specifies the output path for the logger.
 	Output string
-	// Overrides is a mapping of logger names to override configs.
-	Overrides map[string]Config
 }
 
-// FlagSet is the set of flags used to configure the logging package.
-var FlagSet = flag.NewFlagSet("corelog", flag.ContinueOnError)
-
-func init() {
-	FlagSet.String("log-level", "", "Specifies the logging level.")
-	FlagSet.String("log-format", "", "Specifies the output format of the logger")
-	FlagSet.Bool("log-stacktrace", false, "Enables logging error stacktraces.")
-	FlagSet.Bool("log-source", false, "Enables logging the source location.")
-	FlagSet.String("log-output", "", "Specifies the output path for the logger.")
-	FlagSet.String("log-overrides", "", "Specifies logger specific overrides.")
-}
-
-// LoadConfig returns a config with values set from environment variables and cli flags.
-func LoadConfig() Config {
-	// first load the environment variables
-	level := os.Getenv("LOG_LEVEL")
-	output := os.Getenv("LOG_OUTPUT")
-	format := os.Getenv("LOG_FORMAT")
-	enableStackTrace := os.Getenv("LOG_STACKTRACE")
-	enableSource := os.Getenv("LOG_SOURCE")
-	overrides := os.Getenv("LOG_OVERRIDES")
-
-	// override environment variables with command line flags
-	FlagSet.ParseAll(os.Args[1:], func(flag *flag.Flag, value string) error {
-		switch flag.Name {
-		case "log-level":
-			level = value
-		case "log-format":
-			format = value
-		case "log-stacktrace":
-			enableStackTrace = value
-		case "log-source":
-			enableSource = value
-		case "log-output":
-			output = value
-		case "log-overrides":
-			overrides = value
-		}
-		return nil
-	})
-
-	values := make(map[string]string)
-	values["level"] = level
-	values["output"] = output
-	values["format"] = format
-	values["stacktrace"] = enableStackTrace
-	values["source"] = enableSource
-
-	// parse config values
-	config := parseConfigMap(values)
-	config.Overrides = parseConfigOverrides(overrides)
-	return config
-}
-
-// parseConfigMap parses a map of strings into a config.
-func parseConfigMap(values map[string]string) Config {
-	enableSource, _ := strconv.ParseBool(values["source"])
-	enableStacktrace, _ := strconv.ParseBool(values["stacktrace"])
+// DefaultConfig returns a config with default values.
+//
+// The default values are derived from environment variables.
+func DefaultConfig() Config {
+	enableSource, _ := strconv.ParseBool(os.Getenv("LOG_SOURCE"))
+	enableStacktrace, _ := strconv.ParseBool(os.Getenv("LOG_STACKTRACE"))
 
 	return Config{
-		Level:            strings.ToLower(values["level"]),
-		Output:           strings.ToLower(values["output"]),
-		Format:           strings.ToLower(values["format"]),
-		EnableStackTrace: enableStacktrace,
+		Level:            strings.ToLower(os.Getenv("LOG_LEVEL")),
+		Output:           strings.ToLower(os.Getenv("LOG_OUTPUT")),
+		Format:           strings.ToLower(os.Getenv("LOG_FORMAT")),
 		EnableSource:     enableSource,
-		Overrides:        make(map[string]Config),
+		EnableStackTrace: enableStacktrace,
 	}
 }
 
-// parseConfigOverrides parses a mapping of config overrides from the given text.
+// GetConfig returns the config for a named logger.
+func GetConfig(name string) Config {
+	configMutex.RLock()
+	defer configMutex.RUnlock()
+
+	if val, ok := configOverrides[name]; ok {
+		return val
+	}
+	return configValue
+}
+
+// SetConfig sets the config values for all loggers.
+func SetConfig(cfg Config) {
+	configMutex.Lock()
+	defer configMutex.Unlock()
+	configValue = cfg
+}
+
+// SetConfigOverride sets the config override for the given named logger.
+func SetConfigOverride(name string, cfg Config) {
+	configMutex.Lock()
+	defer configMutex.Unlock()
+	configOverrides[name] = cfg
+}
+
+// SetConfigOverrides parses and sets config overrides from the given text.
 //
 // Overrides are separated by ";", and override values are comma separated,
 // where the first value is the name, and the remaining values are key value
 // pairs separated by "=".
-func parseConfigOverrides(text string) map[string]Config {
-	overrides := make(map[string]Config)
+func SetConfigOverrides(text string) {
 	// overrides are separated by ";"
-	for _, part := range strings.Split(text, ";") {
-		configMap := make(map[string]string)
-		// values are separated by ","
-		values := strings.Split(part, ",")
-		for _, kv := range values[1:] {
-			// key values are separated by "="
-			values := strings.SplitN(kv, "=", 2)
+	for _, override := range strings.Split(text, ";") {
+		// override parts are separated by ","
+		parts := strings.Split(override, ",")
+		// first part is the override name
+		name := strings.TrimSpace(parts[0])
+		if name == "" {
+			continue // empty logger name
+		}
+		config := DefaultConfig()
+		// remaining parts are key value pairs
+		for _, pair := range parts[1:] {
+			// key value pairs are separated by "="
+			values := strings.SplitN(pair, "=", 2)
 			if len(values) != 2 {
 				continue // invalid key value
 			}
-			configMap[values[0]] = values[1]
+			key := strings.TrimSpace(values[0])
+			val := strings.TrimSpace(values[1])
+			switch strings.ToLower(key) {
+			case "level":
+				config.Level = strings.ToLower(val)
+			case "format":
+				config.Format = strings.ToLower(val)
+			case "output":
+				config.Output = strings.ToLower(val)
+			case "stacktrace":
+				config.EnableStackTrace, _ = strconv.ParseBool(val)
+			case "source":
+				config.EnableSource, _ = strconv.ParseBool(val)
+			}
 		}
-		// first value is the override name
-		overrideName := values[0]
-		if overrideName == "" {
-			continue // empty logger name
-		}
-		overrides[overrideName] = parseConfigMap(configMap)
+		SetConfigOverride(name, config)
 	}
-	return overrides
 }

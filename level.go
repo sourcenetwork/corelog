@@ -17,15 +17,27 @@ var levelLabels = map[slog.Level]string{
 	levelFatal: "FATAL",
 }
 
-// replaceLoggerLevel returns a function that replaces log level attributes with a corrected label.
-func replaceLoggerLevel(level slog.Level) func([]string, slog.Attr) slog.Attr {
-	return func(groups []string, a slog.Attr) slog.Attr {
-		if a.Key != slog.LevelKey {
-			return a
-		}
-		if label, ok := levelLabels[level]; ok {
-			a.Value = slog.StringValue(label)
-		}
-		return a
+// namedLeveler is an slog.Leveler that gets its value from a named config.
+type namedLeveler string
+
+func (n namedLeveler) Level() slog.Level {
+	switch cfg := GetConfig(string(n)); cfg.Level {
+	case LevelDebug:
+		return levelDebug
+	case LevelInfo:
+		return levelInfo
+	case LevelError:
+		return levelError
+	case LevelFatal:
+		return levelFatal
+	default:
+		return levelInfo
 	}
+}
+
+func (n namedLeveler) ReplaceAttr(groups []string, a slog.Attr) slog.Attr {
+	if a.Key == slog.LevelKey {
+		a.Value = slog.StringValue(levelLabels[n.Level()])
+	}
+	return a
 }

@@ -3,7 +3,6 @@ package corelog
 import (
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
 	"os"
 	"runtime"
@@ -12,75 +11,44 @@ import (
 
 // Logger is a logger that wraps the slog package.
 type Logger struct {
-	handler          slog.Handler
-	enableStackTrace bool
-	enableSource     bool
+	name          string
+	stderrHandler slog.Handler
+	stdoutHandler slog.Handler
 	// skipExit is used for tests that don't want to call os.Exit when logging fatal.
 	skipExit bool
 }
 
-// NewLogger returns a new logger configured with the default config.
+// NewLogger returns a new named logger.
 func NewLogger(name string) *Logger {
-	return NewLoggerWithConfig(name, LoadConfig())
-}
-
-// NewLoggerWithConfig returns a new logger configured with the given config.
-func NewLoggerWithConfig(name string, config Config) *Logger {
-	if config.Overrides == nil {
-		config.Overrides = make(map[string]Config)
-	}
-	// use overrides if specified
-	if val, ok := config.Overrides[name]; ok {
-		return NewLoggerWithConfig(name, val)
-	}
-
-	var level slog.Leveler
-	switch config.Level {
-	case LevelDebug:
-		level = levelDebug
-	case LevelInfo:
-		level = levelInfo
-	case LevelError:
-		level = levelError
-	case LevelFatal:
-		level = levelFatal
-	default:
-		level = levelInfo
-	}
-
-	var output io.Writer
-	switch config.Output {
-	case OutputStdOut:
-		output = os.Stdout
-	case OutputStdErr:
-		output = os.Stderr
-	default:
-		output = os.Stderr
-	}
-
+	config := GetConfig(name)
+	leveler := namedLeveler(name)
 	opts := &slog.HandlerOptions{
 		AddSource:   config.EnableSource,
-		Level:       level,
-		ReplaceAttr: replaceLoggerLevel(level.Level()),
+		Level:       leveler,
+		ReplaceAttr: leveler.ReplaceAttr,
 	}
 
-	var handler slog.Handler
+	var stdoutHandler slog.Handler
+	var stderrHandler slog.Handler
+
 	switch config.Format {
 	case FormatText:
-		handler = slog.NewTextHandler(output, opts)
+		stdoutHandler = slog.NewTextHandler(os.Stdout, opts)
+		stderrHandler = slog.NewTextHandler(os.Stderr, opts)
+
 	case FormatJSON:
-		handler = slog.NewJSONHandler(output, opts)
+		stdoutHandler = slog.NewJSONHandler(os.Stdout, opts)
+		stderrHandler = slog.NewJSONHandler(os.Stderr, opts)
+
 	default:
-		handler = slog.NewTextHandler(output, opts)
+		stdoutHandler = slog.NewTextHandler(os.Stdout, opts)
+		stderrHandler = slog.NewTextHandler(os.Stderr, opts)
 	}
 
-	// add logger name to all logs
-	handler = handler.WithAttrs([]slog.Attr{slog.Any("logger", name)})
-
 	return &Logger{
-		handler:          handler,
-		enableStackTrace: config.EnableStackTrace,
-		enableSource:     config.EnableSource,
+		name:          name,
+		stderrHandler: stderrHandler,
+		stdoutHandler: stdoutHandler,
 	}
 }
 
@@ -88,10 +56,10 @@ func NewLoggerWithConfig(name string, config Config) *Logger {
 // both the receiver's attributes and the arguments.
 func (l *Logger) WithAttrs(attrs ...slog.Attr) *Logger {
 	return &Logger{
-		handler:          l.handler.WithAttrs(attrs),
-		enableStackTrace: l.enableStackTrace,
-		enableSource:     l.enableSource,
-		skipExit:         l.skipExit,
+		name:          l.name,
+		stdoutHandler: l.stdoutHandler.WithAttrs(attrs),
+		stderrHandler: l.stderrHandler.WithAttrs(attrs),
+		skipExit:      l.skipExit,
 	}
 }
 
@@ -99,10 +67,10 @@ func (l *Logger) WithAttrs(attrs ...slog.Attr) *Logger {
 // the receiver's existing groups.
 func (l *Logger) WithGroup(name string) *Logger {
 	return &Logger{
-		handler:          l.handler.WithGroup(name),
-		enableStackTrace: l.enableStackTrace,
-		enableSource:     l.enableSource,
-		skipExit:         l.skipExit,
+		name:          l.name,
+		stdoutHandler: l.stdoutHandler.WithGroup(name),
+		stderrHandler: l.stderrHandler.WithGroup(name),
+		skipExit:      l.skipExit,
 	}
 }
 
@@ -181,23 +149,38 @@ func (l *Logger) FatalContextE(ctx context.Context, msg string, err error, args 
 // log wraps calls to the underlying logger so that the caller source can be corrected and
 // an optional stacktrace can be included.
 func (l *Logger) log(ctx context.Context, level slog.Level, err error, msg string, args []any) {
-	if !l.handler.Enabled(ctx, level) {
+	// check if logger is enabled
+	if !l.stderrHandler.Enabled(ctx, level) {
 		return
 	}
 
+	// use latest config values
+	config := GetConfig(l.name)
+
 	var pcs [1]uintptr
 	// add caller source if enabled
-	if l.enableSource {
+	if config.EnableSource {
 		runtime.Callers(3, pcs[:]) // skip [Callers, log, Info]
 	}
 
 	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
+	r.Add(slog.Any("name", l.name))
 	r.Add(args...)
 
 	// add stack trace if enabled
-	if err != nil && l.enableStackTrace {
+	if err != nil && config.EnableStackTrace {
 		r.Add("stacktrace", fmt.Sprintf("%+v", err))
 	}
 
-	_ = l.handler.Handle(ctx, r)
+	// handle with configured handler
+	switch config.Output {
+	case OutputStdout:
+		_ = l.stdoutHandler.Handle(ctx, r)
+
+	case OutputStderr:
+		_ = l.stderrHandler.Handle(ctx, r)
+
+	default:
+		_ = l.stderrHandler.Handle(ctx, r)
+	}
 }

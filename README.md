@@ -26,33 +26,15 @@ func main() {
 }
 ```
 
-### Usage with Cobra
-
-Add config flags to Cobra.
-
-```go
-package main
-
-import (
-    "github.com/sourcenetwork/corelog"
-    "github.com/spf13/cobra"
-)
-
-func main() {
-    cmd := &cobra.Command{...}
-    cmd.PersistentFlags().AddGoFlagSet(corelog.FlagSet)
-}
-```
-
 ## Configuration
 
-Loggers are configured via environment variables and/or command line flags.
+Default config values can be set via environment variables.
 
-| Env              | Flag             | Description               | Values                              |
-| ---------------- | ---------------- | ------------------------- | ----------------------------------- |
-| `LOG_LEVEL`      | `log-level`      | sets logging level        | `info` `debug` `error` `fatal`      |
-| `LOG_FORMAT`     | `log-format`     | sets logging format       | `json` `text`                       |
-| `LOG_STACKTRACE` | `log-stacktrace` | enables stacktraces       | `true` `false`                      |
-| `LOG_SOURCE`     | `log-source`     | enables source location   | `true` `false`                      |
-| `LOG_OUTPUT`     | `log-output`     | sets the output path      | `stderr` `stdout`                   |
-| `LOG_OVERRIDES`  | `log-overrides`  | logger specific overrides | `net,level=info;core,output=stdout` |
+| Env              | Description               | Values                              |
+| ---------------- | ------------------------- | ----------------------------------- |
+| `LOG_LEVEL`      | sets logging level        | `info` `debug` `error` `fatal`      |
+| `LOG_FORMAT`     | sets logging format       | `json` `text`                       |
+| `LOG_STACKTRACE` | enables stacktraces       | `true` `false`                      |
+| `LOG_SOURCE`     | enables source location   | `true` `false`                      |
+| `LOG_OUTPUT`     | sets the output path      | `stderr` `stdout`                   |
+| `LOG_OVERRIDES`  | logger specific overrides | `net,level=info;core,output=stdout` |
