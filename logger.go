@@ -11,44 +11,15 @@ import (
 
 // Logger is a logger that wraps the slog package.
 type Logger struct {
-	name          string
-	stderrHandler slog.Handler
-	stdoutHandler slog.Handler
-	// skipExit is used for tests that don't want to call os.Exit when logging fatal.
-	skipExit bool
+	name    string
+	handler slog.Handler
 }
 
 // NewLogger returns a new named logger.
 func NewLogger(name string) *Logger {
-	config := GetConfig(name)
-	leveler := namedLeveler(name)
-	opts := &slog.HandlerOptions{
-		AddSource:   config.EnableSource,
-		Level:       leveler,
-		ReplaceAttr: leveler.ReplaceAttr,
-	}
-
-	var stdoutHandler slog.Handler
-	var stderrHandler slog.Handler
-
-	switch config.Format {
-	case FormatText:
-		stdoutHandler = slog.NewTextHandler(os.Stdout, opts)
-		stderrHandler = slog.NewTextHandler(os.Stderr, opts)
-
-	case FormatJSON:
-		stdoutHandler = slog.NewJSONHandler(os.Stdout, opts)
-		stderrHandler = slog.NewJSONHandler(os.Stderr, opts)
-
-	default:
-		stdoutHandler = slog.NewTextHandler(os.Stdout, opts)
-		stderrHandler = slog.NewTextHandler(os.Stderr, opts)
-	}
-
 	return &Logger{
-		name:          name,
-		stderrHandler: stderrHandler,
-		stdoutHandler: stdoutHandler,
+		name:    name,
+		handler: &namedHandler{name: name},
 	}
 }
 
@@ -56,10 +27,8 @@ func NewLogger(name string) *Logger {
 // both the receiver's attributes and the arguments.
 func (l *Logger) WithAttrs(attrs ...slog.Attr) *Logger {
 	return &Logger{
-		name:          l.name,
-		stdoutHandler: l.stdoutHandler.WithAttrs(attrs),
-		stderrHandler: l.stderrHandler.WithAttrs(attrs),
-		skipExit:      l.skipExit,
+		name:    l.name,
+		handler: l.handler.WithAttrs(attrs),
 	}
 }
 
@@ -67,10 +36,8 @@ func (l *Logger) WithAttrs(attrs ...slog.Attr) *Logger {
 // the receiver's existing groups.
 func (l *Logger) WithGroup(name string) *Logger {
 	return &Logger{
-		name:          l.name,
-		stdoutHandler: l.stdoutHandler.WithGroup(name),
-		stderrHandler: l.stderrHandler.WithGroup(name),
-		skipExit:      l.skipExit,
+		name:    l.name,
+		handler: l.handler.WithGroup(name),
 	}
 }
 
@@ -97,17 +64,13 @@ func (l *Logger) ErrorE(msg string, err error, args ...any) {
 // Fatal logs a message at fatal log level.
 func (l *Logger) Fatal(msg string, args ...any) {
 	l.log(context.Background(), levelFatal, nil, msg, args)
-	if !l.skipExit {
-		os.Exit(1)
-	}
+	os.Exit(1)
 }
 
 // FatalE logs a message at fatal log level with an error stacktrace.
 func (l *Logger) FatalE(msg string, err error, args ...any) {
 	l.log(context.Background(), levelFatal, err, msg, args)
-	if !l.skipExit {
-		os.Exit(1)
-	}
+	os.Exit(1)
 }
 
 // DebugContext logs a message at debug log level.
@@ -133,24 +96,20 @@ func (l *Logger) ErrorContextE(ctx context.Context, msg string, err error, args 
 // FatalContext logs a message at fatal log level and calls os.Exit(1).
 func (l *Logger) FatalContext(ctx context.Context, msg string, args ...any) {
 	l.log(ctx, levelFatal, nil, msg, args)
-	if !l.skipExit {
-		os.Exit(1)
-	}
+	os.Exit(1)
 }
 
 // FatalContextE logs a message at fatal log level with an error stacktrace and calls os.Exit(1).
 func (l *Logger) FatalContextE(ctx context.Context, msg string, err error, args ...any) {
 	l.log(ctx, levelFatal, err, msg, args)
-	if !l.skipExit {
-		os.Exit(1)
-	}
+	os.Exit(1)
 }
 
 // log wraps calls to the underlying logger so that the caller source can be corrected and
 // an optional stacktrace can be included.
 func (l *Logger) log(ctx context.Context, level slog.Level, err error, msg string, args []any) {
 	// check if logger is enabled
-	if !l.stderrHandler.Enabled(ctx, level) {
+	if !l.handler.Enabled(ctx, level) {
 		return
 	}
 
@@ -172,15 +131,5 @@ func (l *Logger) log(ctx context.Context, level slog.Level, err error, msg strin
 		r.Add("stacktrace", fmt.Sprintf("%+v", err))
 	}
 
-	// handle with configured handler
-	switch config.Output {
-	case OutputStdout:
-		_ = l.stdoutHandler.Handle(ctx, r)
-
-	case OutputStderr:
-		_ = l.stderrHandler.Handle(ctx, r)
-
-	default:
-		_ = l.stderrHandler.Handle(ctx, r)
-	}
+	_ = l.handler.Handle(ctx, r)
 }
