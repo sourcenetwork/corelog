@@ -7,22 +7,24 @@ Logging library used across Source Network projects.
 ```go
 package main
 
-import (
-    "log/slog"
-
-    "github.com/sourcenetwork/corelog"
-)
+import "github.com/sourcenetwork/corelog"
 
 var log = corelog.NewLogger("main")
 
 func main() {
-    log.Debug("doing stuff", "key", "val")
+    // with alternating key value pairs
+    log.Debug("message", "key", "val")
+    
+    // with explicit attributes
+    log.Debug("message", corelog.String("key", "val"))
 
-    attrs := log.WithAttrs(slog.Any("key", "val"))
-    attrs.Info("doing stuff with attrs")
+    // with common attributes
+    attrs := log.WithAttrs(corelog.String("key", "val"))
+    attrs.Info("message")
 
+    // with common group
     group := log.WithGroup("group")
-    group.Info("doing stuff with group", "key", "val")
+    group.Info("message", "key", "val")
 }
 ```
 
