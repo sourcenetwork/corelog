@@ -47,11 +47,11 @@ func (h namedHandler) Handle(ctx context.Context, record slog.Record) error {
 	switch config.Output {
 	case OutputStderr:
 		output = os.Stderr
-
 	case OutputStdout:
 		output = os.Stdout
-
 	default:
+		// default to os.Stderr if no value is set
+		// or the set value is invalid
 		output = os.Stderr
 	}
 
@@ -59,11 +59,11 @@ func (h namedHandler) Handle(ctx context.Context, record slog.Record) error {
 	switch config.Format {
 	case FormatText:
 		handler = slog.NewTextHandler(output, opts)
-
 	case FormatJSON:
 		handler = slog.NewJSONHandler(output, opts)
-
 	default:
+		// default to slog.TextHandler if no value is set
+		// or the set value is invalid
 		handler = slog.NewTextHandler(output, opts)
 	}
 

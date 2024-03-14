@@ -31,6 +31,8 @@ func (n namedLeveler) Level() slog.Level {
 	case LevelFatal:
 		return levelFatal
 	default:
+		// default to info if no value is set
+		// or the set value is invalid
 		return levelInfo
 	}
 }
