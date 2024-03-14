@@ -24,7 +24,7 @@ func TestDefaultConfigWithEnv(t *testing.T) {
 }
 
 func TestSetConfigOverrides(t *testing.T) {
-	SetConfigOverrides("net,level=debug,source=true,format=json,invalid;core,output=stdout,stacktrace=true")
+	SetConfigOverrides("net,level=error,source=true,format=json,invalid;core,output=stdout,stacktrace=true")
 
 	cfg := GetConfig("")
 	assert.Equal(t, "", cfg.Level)
@@ -34,7 +34,7 @@ func TestSetConfigOverrides(t *testing.T) {
 	assert.Equal(t, false, cfg.EnableSource)
 
 	net := GetConfig("net")
-	assert.Equal(t, LevelDebug, net.Level)
+	assert.Equal(t, LevelError, net.Level)
 	assert.Equal(t, "", net.Output)
 	assert.Equal(t, FormatJSON, net.Format)
 	assert.Equal(t, false, net.EnableStackTrace)

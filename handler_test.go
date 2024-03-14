@@ -35,44 +35,20 @@ func (h *TestHandler) WithGroup(name string) slog.Handler {
 	return &TestHandler{attrs: h.attrs, group: name, records: h.records}
 }
 
-func TestHandlerWithLevelDebug(t *testing.T) {
-	SetConfig(Config{Level: LevelDebug})
-	handler := namedHandler{name: "test"}
-
-	assert.True(t, handler.Enabled(context.Background(), levelDebug))
-	assert.True(t, handler.Enabled(context.Background(), levelInfo))
-	assert.True(t, handler.Enabled(context.Background(), levelError))
-	assert.True(t, handler.Enabled(context.Background(), levelFatal))
-}
-
 func TestHandlerWithLevelInfo(t *testing.T) {
 	SetConfig(Config{Level: LevelInfo})
 	handler := namedHandler{name: "test"}
 
-	assert.False(t, handler.Enabled(context.Background(), levelDebug))
-	assert.True(t, handler.Enabled(context.Background(), levelInfo))
-	assert.True(t, handler.Enabled(context.Background(), levelError))
-	assert.True(t, handler.Enabled(context.Background(), levelFatal))
+	assert.True(t, handler.Enabled(context.Background(), slog.LevelInfo))
+	assert.True(t, handler.Enabled(context.Background(), slog.LevelError))
 }
 
 func TestHandlerWithLevelError(t *testing.T) {
 	SetConfig(Config{Level: LevelError})
 	handler := namedHandler{name: "test"}
 
-	assert.False(t, handler.Enabled(context.Background(), levelDebug))
-	assert.False(t, handler.Enabled(context.Background(), levelInfo))
-	assert.True(t, handler.Enabled(context.Background(), levelError))
-	assert.True(t, handler.Enabled(context.Background(), levelFatal))
-}
-
-func TestHandlerWithLevelFatal(t *testing.T) {
-	SetConfig(Config{Level: LevelFatal})
-	handler := namedHandler{name: "test"}
-
-	assert.False(t, handler.Enabled(context.Background(), levelDebug))
-	assert.False(t, handler.Enabled(context.Background(), levelInfo))
-	assert.False(t, handler.Enabled(context.Background(), levelError))
-	assert.True(t, handler.Enabled(context.Background(), levelFatal))
+	assert.False(t, handler.Enabled(context.Background(), slog.LevelInfo))
+	assert.True(t, handler.Enabled(context.Background(), slog.LevelError))
 }
 
 func TestHandlerWithAttrs(t *testing.T) {

@@ -14,8 +14,7 @@ type namedHandler struct {
 }
 
 func (h namedHandler) Enabled(ctx context.Context, level slog.Level) bool {
-	leveler := namedLeveler(h.name)
-	return level >= leveler.Level()
+	return level >= namedLeveler(h.name).Level()
 }
 
 func (h namedHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
@@ -38,9 +37,8 @@ func (h namedHandler) Handle(ctx context.Context, record slog.Record) error {
 	config := GetConfig(h.name)
 	leveler := namedLeveler(h.name)
 	opts := &slog.HandlerOptions{
-		AddSource:   config.EnableSource,
-		Level:       leveler,
-		ReplaceAttr: leveler.ReplaceAttr,
+		AddSource: config.EnableSource,
+		Level:     leveler,
 	}
 
 	var output io.Writer

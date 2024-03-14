@@ -18,7 +18,7 @@ func TestNewLogger(t *testing.T) {
 
 func TestLoggerLogWithConfigOverride(t *testing.T) {
 	SetConfig(Config{
-		Level:            LevelFatal,
+		Level:            LevelError,
 		Format:           FormatJSON,
 		Output:           OutputStderr,
 		EnableStackTrace: false,
@@ -41,11 +41,11 @@ func TestLoggerLogWithConfigOverride(t *testing.T) {
 	ctx := context.Background()
 	err := errors.New("test error")
 
-	logger.log(ctx, levelInfo, err, "test", []any{slog.Any("arg1", "val1")})
+	logger.log(ctx, slog.LevelInfo, err, "test", []slog.Attr{slog.Any("arg1", "val1")})
 	require.Len(t, handler.records, 1)
 
 	assert.NotEqual(t, uintptr(0x00), handler.records[0].PC)
-	assert.Equal(t, levelInfo, handler.records[0].Level)
+	assert.Equal(t, slog.LevelInfo, handler.records[0].Level)
 	assert.Equal(t, "test", handler.records[0].Message)
 
 	attrs := []slog.Attr{
@@ -65,10 +65,10 @@ func TestLoggerInfoWithEnableSource(t *testing.T) {
 		handler: handler,
 	}
 
-	logger.Info("test", "arg1", "val1")
+	logger.Info("test", String("arg1", "val1"))
 	require.Len(t, handler.records, 1)
 
-	assert.Equal(t, levelInfo, handler.records[0].Level)
+	assert.Equal(t, slog.LevelInfo, handler.records[0].Level)
 	assert.Equal(t, "test", handler.records[0].Message)
 	assert.NotEqual(t, uintptr(0x00), handler.records[0].PC)
 	assertRecordAttrs(t, handler.records[0], slog.Any("name", "test"), slog.Any("arg1", "val1"))

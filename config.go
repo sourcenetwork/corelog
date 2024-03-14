@@ -8,14 +8,10 @@ import (
 )
 
 const (
-	// LevelDebug specifies debug log level.
-	LevelDebug = "debug"
 	// LevelDebug specifies info log level.
 	LevelInfo = "info"
 	// LevelDebug specifies error log level.
 	LevelError = "error"
-	// LevelDebug specifies fatal log level.
-	LevelFatal = "fatal"
 	// FormatText specifies text output for a logger.
 	FormatText = "text"
 	// FormatJSON specifies json output for a logger.
