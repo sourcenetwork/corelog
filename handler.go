@@ -39,6 +39,17 @@ func (h namedHandler) Handle(ctx context.Context, record slog.Record) error {
 	opts := &slog.HandlerOptions{
 		AddSource: config.EnableSource,
 		Level:     leveler,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			switch a.Key {
+			case slog.MessageKey, slog.LevelKey, slog.TimeKey:
+				// ignore these built in attributes
+				// so that we can customize the order
+				return slog.Attr{}
+			case slog.SourceKey:
+				a.Key = "$source"
+			}
+			return a
+		},
 	}
 
 	var output io.Writer
