@@ -89,13 +89,13 @@ func (l *Logger) log(ctx context.Context, level slog.Level, err error, msg strin
 
 	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
 	// add logger name
-	r.Add("name", l.name)
+	r.Add(nameKey, l.name)
 	// add remaining attributes
 	r.AddAttrs(args...)
 
 	// add stack trace if enabled
 	if err != nil && config.EnableStackTrace {
-		r.Add("stack", fmt.Sprintf("%+v", err))
+		r.Add(stackKey, fmt.Sprintf("%+v", err))
 	}
 
 	_ = l.handler.Handle(ctx, r)

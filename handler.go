@@ -9,6 +9,13 @@ import (
 	"github.com/lmittmann/tint"
 )
 
+const (
+	// nameKey is the key for the logger name attribute
+	nameKey = "$name"
+	// stackKey is the key for the logger stack attribute
+	stackKey = "$stack"
+)
+
 type namedHandler struct {
 	name  string
 	attrs []slog.Attr
@@ -61,10 +68,17 @@ func (h namedHandler) Handle(ctx context.Context, record slog.Record) error {
 		// default to tint.Handler if no value is set
 		// or the set value is invalid
 		handler = tint.NewHandler(output, &tint.Options{
-			AddSource:   opts.AddSource,
-			Level:       opts.Level,
-			ReplaceAttr: opts.ReplaceAttr,
+			AddSource: opts.AddSource,
+			Level:     opts.Level,
+			ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
+				if attr.Key == nameKey {
+					return slog.Attr{} // ignore name as it is prended to message
+				}
+				return attr
+			},
 		})
+		// prepend logger name to message
+		record.Message = h.name + " " + record.Message
 	}
 
 	if len(h.attrs) > 0 {
