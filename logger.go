@@ -88,17 +88,14 @@ func (l *Logger) log(ctx context.Context, level slog.Level, err error, msg strin
 	}
 
 	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
-	// add front attributes in specific order
-	r.Add(slog.String("$time", r.Time.Format(time.DateTime)))
-	r.Add(slog.String("$name", l.name))
-	r.Add(slog.Any("$level", r.Level))
-	r.Add(slog.String("$msg", r.Message))
+	// add logger name
+	r.Add("name", l.name)
 	// add remaining attributes
 	r.AddAttrs(args...)
 
 	// add stack trace if enabled
 	if err != nil && config.EnableStackTrace {
-		r.Add("$stack", fmt.Sprintf("%+v", err))
+		r.Add("stack", fmt.Sprintf("%+v", err))
 	}
 
 	_ = l.handler.Handle(ctx, r)

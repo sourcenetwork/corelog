@@ -5,6 +5,8 @@ import (
 	"io"
 	"log/slog"
 	"os"
+
+	"github.com/lmittmann/tint"
 )
 
 type namedHandler struct {
@@ -39,23 +41,10 @@ func (h namedHandler) Handle(ctx context.Context, record slog.Record) error {
 	opts := &slog.HandlerOptions{
 		AddSource: config.EnableSource,
 		Level:     leveler,
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			switch a.Key {
-			case slog.MessageKey, slog.LevelKey, slog.TimeKey:
-				// ignore these built in attributes
-				// so that we can customize the order
-				return slog.Attr{}
-			case slog.SourceKey:
-				a.Key = "$source"
-			}
-			return a
-		},
 	}
 
 	var output io.Writer
 	switch config.Output {
-	case OutputStderr:
-		output = os.Stderr
 	case OutputStdout:
 		output = os.Stdout
 	default:
@@ -66,14 +55,16 @@ func (h namedHandler) Handle(ctx context.Context, record slog.Record) error {
 
 	var handler slog.Handler
 	switch config.Format {
-	case FormatText:
-		handler = slog.NewTextHandler(output, opts)
 	case FormatJSON:
 		handler = slog.NewJSONHandler(output, opts)
 	default:
-		// default to slog.TextHandler if no value is set
+		// default to tint.Handler if no value is set
 		// or the set value is invalid
-		handler = slog.NewTextHandler(output, opts)
+		handler = tint.NewHandler(output, &tint.Options{
+			AddSource:   opts.AddSource,
+			Level:       opts.Level,
+			ReplaceAttr: opts.ReplaceAttr,
+		})
 	}
 
 	if len(h.attrs) > 0 {
