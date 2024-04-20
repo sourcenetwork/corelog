@@ -2,11 +2,11 @@ package corelog
 
 import (
 	"context"
-	"io"
 	"log/slog"
 	"os"
 
 	"github.com/lmittmann/tint"
+	"github.com/mattn/go-isatty"
 )
 
 const (
@@ -50,7 +50,7 @@ func (h namedHandler) Handle(ctx context.Context, record slog.Record) error {
 		Level:     leveler,
 	}
 
-	var output io.Writer
+	var output *os.File
 	switch config.Output {
 	case OutputStdout:
 		output = os.Stdout
@@ -70,6 +70,8 @@ func (h namedHandler) Handle(ctx context.Context, record slog.Record) error {
 		handler = tint.NewHandler(output, &tint.Options{
 			AddSource: opts.AddSource,
 			Level:     opts.Level,
+			// disable color if not a tty or config requested no color
+			NoColor: !isatty.IsTerminal(output.Fd()) || config.DisableColor,
 			ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
 				if attr.Key == nameKey {
 					return slog.Attr{} // ignore name as it is prended to message
