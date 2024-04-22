@@ -14,6 +14,14 @@ const (
 	nameKey = "$name"
 	// stackKey is the key for the logger stack attribute
 	stackKey = "$stack"
+	// msgKey is the key for the logger message attribute
+	msgKey = "$msg"
+	// timeKey is the key for the logger time attribute
+	timeKey = "$time"
+	// levelKey is the key for the logger level attribute
+	levelKey = "$level"
+	// sourceKey is the key for the logger source attribute
+	sourceKey = "$source"
 )
 
 type namedHandler struct {
@@ -44,11 +52,6 @@ func (h namedHandler) WithGroup(name string) slog.Handler {
 
 func (h namedHandler) Handle(ctx context.Context, record slog.Record) error {
 	config := GetConfig(h.name)
-	leveler := namedLeveler(h.name)
-	opts := &slog.HandlerOptions{
-		AddSource: config.EnableSource,
-		Level:     leveler,
-	}
 
 	var output *os.File
 	switch config.Output {
@@ -63,22 +66,11 @@ func (h namedHandler) Handle(ctx context.Context, record slog.Record) error {
 	var handler slog.Handler
 	switch config.Format {
 	case FormatJSON:
-		handler = slog.NewJSONHandler(output, opts)
+		handler = newJSONHandler(config, h.name, output)
 	default:
 		// default to tint.Handler if no value is set
 		// or the set value is invalid
-		handler = tint.NewHandler(output, &tint.Options{
-			AddSource: opts.AddSource,
-			Level:     opts.Level,
-			// disable color if not a tty or config requested no color
-			NoColor: !isatty.IsTerminal(output.Fd()) || config.DisableColor,
-			ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
-				if attr.Key == nameKey {
-					return slog.Attr{} // ignore name as it is prended to message
-				}
-				return attr
-			},
-		})
+		handler = newTintHandler(config, h.name, output)
 		// prepend logger name to message
 		record.Message = h.name + " " + record.Message
 	}
@@ -90,4 +82,40 @@ func (h namedHandler) Handle(ctx context.Context, record slog.Record) error {
 		handler = handler.WithGroup(h.group)
 	}
 	return handler.Handle(ctx, record)
+}
+
+func newTintHandler(config Config, name string, output *os.File) slog.Handler {
+	return tint.NewHandler(output, &tint.Options{
+		AddSource: config.EnableSource,
+		Level:     namedLeveler(name),
+		// disable color if not a tty or config requested no color
+		NoColor: !isatty.IsTerminal(output.Fd()) || config.DisableColor,
+		ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
+			// ignore name as it is prended to message
+			if attr.Key == nameKey {
+				return slog.Attr{}
+			}
+			return attr
+		},
+	})
+}
+
+func newJSONHandler(config Config, name string, output *os.File) *slog.JSONHandler {
+	return slog.NewJSONHandler(output, &slog.HandlerOptions{
+		AddSource: config.EnableSource,
+		Level:     namedLeveler(name),
+		ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
+			switch attr.Key {
+			case slog.TimeKey:
+				attr.Key = timeKey
+			case slog.LevelKey:
+				attr.Key = levelKey
+			case slog.MessageKey:
+				attr.Key = msgKey
+			case slog.SourceKey:
+				attr.Key = sourceKey
+			}
+			return attr
+		},
+	})
 }
