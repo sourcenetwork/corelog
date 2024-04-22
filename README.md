@@ -43,3 +43,4 @@ Default config values can be set via environment variables.
 | `LOG_SOURCE`     | enables source location   | `true` `false`                      |
 | `LOG_OUTPUT`     | sets the output path      | `stderr` `stdout`                   |
 | `LOG_OVERRIDES`  | logger specific overrides | `net,level=info;core,output=stdout` |
+| `LOG_NO_COLOR`   | disable color text output | `true` `false`                      |
