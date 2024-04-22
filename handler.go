@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/lmittmann/tint"
-	"github.com/mattn/go-isatty"
+	"golang.org/x/term"
 )
 
 const (
@@ -85,11 +85,11 @@ func (h namedHandler) Handle(ctx context.Context, record slog.Record) error {
 }
 
 func newTintHandler(config Config, name string, output *os.File) slog.Handler {
+	isTerminal := term.IsTerminal(int(output.Fd()))
 	return tint.NewHandler(output, &tint.Options{
 		AddSource: config.EnableSource,
 		Level:     namedLeveler(name),
-		// disable color if not a tty or config requested no color
-		NoColor: !isatty.IsTerminal(output.Fd()) || config.DisableColor,
+		NoColor:   !isTerminal || config.DisableColor,
 		ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
 			// ignore name as it is prended to message
 			if attr.Key == nameKey {
