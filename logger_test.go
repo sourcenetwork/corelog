@@ -49,11 +49,9 @@ func TestLoggerLogWithConfigOverride(t *testing.T) {
 	assert.Equal(t, "test", handler.records[0].Message)
 
 	attrs := []slog.Attr{
-		slog.Any("$name", "test"),
-		slog.Any("$level", slog.LevelInfo),
-		slog.Any("$msg", "test"),
+		slog.Any(nameKey, "test"),
 		slog.Any("arg1", "val1"),
-		slog.Any("$stack", fmt.Sprintf("%+v", err)),
+		slog.Any(stackKey, fmt.Sprintf("%+v", err)),
 	}
 	assertRecordAttrs(t, handler.records[0], attrs...)
 }
@@ -75,9 +73,7 @@ func TestLoggerInfoWithEnableSource(t *testing.T) {
 	assert.NotEqual(t, uintptr(0x00), handler.records[0].PC)
 
 	attrs := []slog.Attr{
-		slog.Any("$name", "test"),
-		slog.Any("$level", slog.LevelInfo),
-		slog.Any("$msg", "test"),
+		slog.Any(nameKey, "test"),
 		slog.Any("arg1", "val1"),
 	}
 	assertRecordAttrs(t, handler.records[0], attrs...)
@@ -118,9 +114,7 @@ func assertRecordAttrs(
 ) {
 	var actual []slog.Attr
 	record.Attrs(func(a slog.Attr) bool {
-		if a.Key != "$time" {
-			actual = append(actual, a)
-		}
+		actual = append(actual, a)
 		return true
 	})
 	assert.Equal(t, expected, actual)

@@ -45,6 +45,8 @@ type Config struct {
 	EnableSource bool
 	// Output specifies the output path for the logger.
 	Output string
+	// DisableColor specifies if colored output is disabled.
+	DisableColor bool
 }
 
 // DefaultConfig returns a config with default values.
@@ -53,6 +55,7 @@ type Config struct {
 func DefaultConfig() Config {
 	enableSource, _ := strconv.ParseBool(os.Getenv("LOG_SOURCE"))
 	enableStacktrace, _ := strconv.ParseBool(os.Getenv("LOG_STACKTRACE"))
+	disableColor, _ := strconv.ParseBool(os.Getenv("LOG_NO_COLOR"))
 
 	return Config{
 		Level:            strings.ToLower(os.Getenv("LOG_LEVEL")),
@@ -60,6 +63,7 @@ func DefaultConfig() Config {
 		Format:           strings.ToLower(os.Getenv("LOG_FORMAT")),
 		EnableSource:     enableSource,
 		EnableStackTrace: enableStacktrace,
+		DisableColor:     disableColor,
 	}
 }
 
@@ -124,6 +128,8 @@ func SetConfigOverrides(text string) {
 				config.EnableStackTrace, _ = strconv.ParseBool(val)
 			case "source":
 				config.EnableSource, _ = strconv.ParseBool(val)
+			case "no-color":
+				config.DisableColor, _ = strconv.ParseBool(val)
 			}
 		}
 		SetConfigOverride(name, config)
