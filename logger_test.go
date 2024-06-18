@@ -52,6 +52,7 @@ func TestLoggerLogWithConfigOverride(t *testing.T) {
 		slog.Any(nameKey, "test"),
 		slog.Any("arg1", "val1"),
 		slog.Any(stackKey, fmt.Sprintf("%+v", err)),
+		slog.Any(errorKey, err.Error()),
 	}
 	assertRecordAttrs(t, handler.records[0], attrs...)
 }

@@ -14,6 +14,8 @@ const (
 	nameKey = "$name"
 	// stackKey is the key for the logger stack attribute
 	stackKey = "$stack"
+	// errorKey is the key for the logger error attribute
+	errorKey = "$err"
 	// msgKey is the key for the logger message attribute
 	msgKey = "$msg"
 	// timeKey is the key for the logger time attribute
