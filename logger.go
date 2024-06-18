@@ -97,6 +97,10 @@ func (l *Logger) log(ctx context.Context, level slog.Level, err error, msg strin
 	if err != nil && config.EnableStackTrace {
 		r.Add(stackKey, fmt.Sprintf("%+v", err))
 	}
+	// add error if not nil
+	if err != nil {
+		r.Add(errorKey, err.Error())
+	}
 
 	_ = l.handler.Handle(ctx, r)
 }
