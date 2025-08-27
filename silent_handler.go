@@ -21,7 +21,11 @@ const (
 	sourceKey = "$source"
 )
 
-type namedHandler struct{}
+type namedHandler struct {
+	name  string
+	attrs []slog.Attr
+	group string
+}
 
 func (h namedHandler) Enabled(ctx context.Context, level slog.Level) bool {
 	return false
