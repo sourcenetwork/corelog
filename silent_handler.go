@@ -11,6 +11,16 @@ import (
 // This dummies out all of the logging functionality, so that code using the
 // logger will be silent, if the build tag silent is used.
 
+const (
+	nameKey   = "$name"
+	stackKey  = "$stack"
+	errorKey  = "$err"
+	msgKey    = "$msg"
+	timeKey   = "$time"
+	levelKey  = "$level"
+	sourceKey = "$source"
+)
+
 type namedHandler struct{}
 
 func (h namedHandler) Enabled(ctx context.Context, level slog.Level) bool {
