@@ -1,3 +1,5 @@
+//go:build !silent
+
 package corelog
 
 import (
